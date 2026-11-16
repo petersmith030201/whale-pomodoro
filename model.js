@@ -76,21 +76,6 @@ function treeIndex(tasks, validate = false) {
   return { byId, children, ordered };
 }
 
-function reconcileParents(state, markUpdated = false) {
-  const { children, ordered } = treeIndex(state.tasks, true);
-  const now = state.updatedAt;
-  for (let i = ordered.length - 1; i >= 0; i--) {
-    const task = ordered[i];
-    const list = children.get(task.id);
-    if (!list?.length) continue;
-    const completed = list.every(child => child.completed);
-    if (task.completed !== completed) {
-      task.completed = completed;
-      if (markUpdated) task.updatedAt = now;
-    }
-  }
-}
-
 function findTask(state, id) {
   const task = state.tasks.find(item => item.id === id);
   if (!task) error('找不到这个任务');
@@ -122,7 +107,6 @@ export function addTask(state, title, parentId = null, estimate = 0) {
   for (const task of state.tasks) if (task.parentId === parentId) order = Math.max(order, task.order + 1);
   const task = { id, parentId, title, estimate, completed: false, collapsed: false, order, createdAt: now, updatedAt: now };
   state.tasks.push(task);
-  reconcileParents(state, true);
   return task;
 }
 
@@ -150,19 +134,14 @@ export function deleteTask(state, id) {
   if (removed.has(state.selectedTaskId)) state.selectedTaskId = null;
   // A live round and historical records retain their original task/name snapshot.
   touch(state);
-  reconcileParents(state, true);
   return removed.size;
 }
 
 export function toggleTask(state, id, completed) {
   const task = findTask(state, id);
   completed = completed === undefined ? !task.completed : boolean(completed, '完成状态');
-  const affected = descendants(state, id);
-  const now = touch(state);
-  for (const item of state.tasks) {
-    if (affected.has(item.id)) { item.completed = completed; item.updatedAt = now; }
-  }
-  reconcileParents(state, true);
+  task.completed = completed;
+  task.updatedAt = touch(state);
   return task;
 }
 
@@ -188,7 +167,6 @@ export function moveTask(state, id, parentId, order) {
     const former = state.tasks.filter(item => item.parentId === oldParentId).sort(siblingSort);
     former.forEach((item, i) => { item.order = i; item.updatedAt = now; });
   }
-  reconcileParents(state, true);
   return task;
 }
 
@@ -308,7 +286,6 @@ function normalizeState(raw) {
     if (recordIds.has(record.id)) error('专注记录 ID 重复');
     recordIds.add(record.id);
   }
-  reconcileParents(state);
   return state;
 }
 
