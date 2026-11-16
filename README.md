@@ -1,0 +1,102 @@
+# 肥鱼专注屋 · Whale Focus
+
+一个以 Q 版大肥鱼鲸鱼娘为主题的中文番茄钟。游客打开即可使用，支持任意层级任务树、本地保存，以及完整 JSON 备份的导入和导出。
+
+本项目为非官方社区主题创作，与深度求索公司或 DeepSeek 官方无关联。角色参考与生成过程见 [ATTRIBUTION.md](./ATTRIBUTION.md) 和 [ASSET_NOTES.md](./ASSET_NOTES.md)。
+
+## 功能
+
+- 默认专注 25 分钟、短休息 5 分钟、长休息 15 分钟；每完成 4 个番茄后长休息，时长和轮次可调整。
+- 开始、暂停、继续、重置和跳过休息；自动开始休息、自动开始专注分别设置，默认关闭。
+- 任务可以不断添加子任务，支持折叠、搜索、完成、调整父级和顺序，以及聚焦某棵子树。软件不预设固定层级上限，实际容量取决于浏览器和设备。
+- 开始一轮时绑定任务，暂停后继续保持原任务归属；完整结束才增加番茄数，已经投入的实际专注时间也会保存。
+- 统计今日专注时间、完成番茄和任务进度，并查看专注记录。
+- 鲸鱼娘待机、看书和休息状态，配合轻微动效；提示音、桌面通知、气泡和减少动效均可设置。
+- 数据保存在当前浏览器，导入导出在本机完成。
+
+## 本地预览
+
+项目是原生 HTML、CSS 和 JavaScript ES 模块，无第三方运行依赖，也不需要安装 npm 包。
+
+电脑安装 Python 3 后，Windows 用户可以双击项目根目录中的 `start-preview.cmd`。它会在当前项目目录启动本地预览服务器，并打开默认浏览器；关闭服务器窗口或按 `Ctrl+C` 即停止预览。
+
+也可以在项目目录的终端运行：
+
+```powershell
+python -m http.server 4173 --bind 127.0.0.1
+```
+
+然后打开 [本地预览](http://127.0.0.1:4173/)。
+
+请通过本地 HTTP 地址预览。直接双击 `index.html` 的 `file://` 打开方式可能受到 ES 模块和浏览器存储规则限制。为了持续使用同一份本地数据，请固定使用同一浏览器和地址（包括端口）。[浏览器本地存储说明](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage)
+
+## 任务与计时规则
+
+任务名称可以直接选为当前任务；任务的更多操作中可以添加子任务、调整父级、移动顺序和只看该项。勾选父任务会完成其后代，取消子任务后祖先任务会恢复未完成；父级汇总后代的时间和番茄时不会重复计数，可在任务编辑窗口中查看汇总。
+
+完整完成一轮专注才记为一个番茄。暂停、重置或切换模式不增加完成番茄数，暂停前实际投入的时间仍计入专注时间。休息时间不计入专注时长，日期按设备本地时间划分。
+
+刷新或重新打开时按实际剩余时间恢复。如果原来的一轮已经到期，只结算这一轮并等待继续，不会补算离线期间的后续轮次。网页保持打开时提供到点提醒；锁屏、系统休眠和浏览器后台限制可能影响声音或桌面通知。
+
+## 本地数据与备份
+
+本版本没有注册或登录。不同设备、不同浏览器和不同网站地址各自保存数据，不会自动跨设备同步。清除网站数据、使用会被自动清理的浏览模式，或者更换浏览器前，建议先导出备份。
+
+点击页面顶部的备份按钮：
+
+1. 选择“导出 JSON”，下载一份完整备份，包含任务父子关系、任务状态、专注记录、设置和本轮计时进度。
+2. 在另一设备或浏览器选择备份文件。网页先检查结构、任务关系和记录内容。
+3. 选择“合并到现有数据”或“替换当前数据”，再确认导入。
+
+“合并”保留本机的设置和当前计时进度，并暂停本轮，合并任务并去重记录；“替换”使用备份中的任务、记录和设置，计时以暂停或空闲状态恢复，避免导入后意外自动开始。替换前请先导出本机备份。
+
+备份文件只在你的浏览器内读取，不上传到 GitHub 或其他服务器。导出文件包含任务文字和历史记录，请自行保管。删除任务会移除任务子树，历史记录仍保留当时的任务名称。
+
+## 部署到 GitHub Pages
+
+项目仓库：[petersmith030201/whale-pomodoro](https://github.com/petersmith030201/whale-pomodoro)。
+
+网站地址：[肥鱼专注屋](https://petersmith030201.github.io/whale-pomodoro/)。首次发布需等待 GitHub Pages 部署完成；发布来源使用 `main` 分支的 `/(root)` 目录。
+
+GitHub Free 可以为公开仓库提供 Pages。公开仓库中的代码和图片、以及发布的网站可以被其他人查看；你在网页上创建的任务仍按本项目设计保存在自己的浏览器，不会变成仓库文件。[GitHub Pages 官方介绍](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)
+
+### 方式一：从分支发布（最简单）
+
+1. 登录自己的 GitHub 账号，新建公开仓库 `whale-pomodoro`。
+2. 将项目文件上传到仓库根目录。请确认根目录可以直接看到 `index.html`，而不是再套一层 `whale-pomodoro/` 文件夹。
+3. 确认 `styles.css`、`app.js`、`model.js`、`timer.js`、`.nojekyll` 和 `assets/` 都在仓库中。
+4. 打开仓库 **Settings → Pages → Build and deployment**。
+5. **Source** 选择 **Deploy from a branch**，分支选择 **main**，目录选择 **/(root)**，点击 **Save**。
+6. 等待部署完成，打开 Pages 设置显示的网址。以后更新 `main` 分支中的网站文件，会重新发布。
+
+无需修改用户名到网页代码里；页面使用相对路径，适用于项目子目录地址。[从分支发布的官方步骤](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
+
+### 方式二：GitHub Actions 自动部署
+
+源码包附带 `.github/workflows/pages.yml`。通过 Git 上传时保留这个隐藏目录，然后将 **Settings → Pages → Source** 改为 **GitHub Actions**。推送到 `main` 或在 Actions 中手动运行该工作流即可发布。
+
+这个工作流会整理静态文件并上传，运行时不需要服务器进程，也不需要 npm 安装或构建步骤。分支发布和 Actions 发布二选一即可。[自定义 Pages 工作流官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
+
+## 文件结构
+
+```text
+index.html                 页面结构
+styles.css                 页面样式与响应式布局
+app.js                    页面交互、本地保存、提示音和备份操作
+model.js                  任务树、数据校验与合并
+timer.js                  计时与统计逻辑
+assets/                    角色 PNG 和站点图标
+tests/                     Node.js 逻辑测试
+.github/workflows/pages.yml  可选的 Pages 自动部署
+start-preview.cmd          Windows 本地预览入口
+ATTRIBUTION.md             素材来源与许可范围说明
+ASSET_NOTES.md             角色插画生成记录
+```
+
+运行逻辑测试：
+
+```powershell
+node --test
+```
+
+运行网站仅需浏览器；Python 用于本地预览，Node.js 用于逻辑测试。GitHub Pages 只需静态网页文件。
