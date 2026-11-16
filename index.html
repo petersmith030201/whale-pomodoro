@@ -7,7 +7,7 @@
   <meta name="description" content="和大肥鱼一起，把大任务拆成小小一步。支持多级任务、本地保存和备份的鲸鱼娘番茄钟。">
   <title>肥鱼专注屋 · 和小鲸一起专注</title>
   <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=1.1.1">
 </head>
 <body>
   <div class="ambient ambient-one" aria-hidden="true"></div><div class="ambient ambient-two" aria-hidden="true"></div>
@@ -74,20 +74,24 @@
   </dialog>
   <dialog id="aiConfigDialog" class="app-dialog" aria-labelledby="aiConfigTitle"><form id="aiConfigForm">
     <div class="dialog-heading"><div><p class="eyebrow">YOUR AI CONNECTION</p><h2 id="aiConfigTitle">连接小鲸的 AI 接口</h2></div><button type="button" class="icon-button" data-close="aiConfigDialog" aria-label="关闭接口设置" data-icon="x"></button></div>
-    <p class="dialog-intro">还没有接口也没关系：计划分析可以先使用本地统计。配置后，分析和聊天共用同一个接口。</p>
+    <p class="dialog-intro">选择服务 → 粘贴密钥 → 读取并选择模型 → 保存并测试。分析和聊天共用这套配置。</p>
     <label class="field-label">服务预设<select id="aiPreset"><option value="custom">自定义 / 稍后配置</option><option value="deepseek">DeepSeek</option></select></label>
-    <label class="field-label">接口地址<input id="aiEndpoint" type="url" required autocomplete="off" placeholder="https://api.deepseek.com/chat/completions"></label>
-    <label class="field-label">模型名称<input id="aiModel" maxlength="120" autocomplete="off" placeholder="填写服务商提供的模型名称"></label>
-    <label class="field-label">API 密钥<input id="aiKey" type="password" maxlength="2000" autocomplete="off" spellcheck="false" placeholder="有接口后再填写；自己的代理可按需留空"></label>
+    <label class="field-label">API 密钥<input id="aiKey" type="password" maxlength="2000" autocomplete="off" spellcheck="false" placeholder="粘贴 DeepSeek 官方 API 密钥"></label>
+    <div class="ai-model-row"><label class="field-label">选择模型<select id="aiModelSelect"><option value="">请选择模型</option></select></label><button type="button" class="secondary-button" id="aiFetchModels">读取可用模型</button></div>
+    <p class="field-help" id="aiModelHint">先填密钥，再读取平台实际支持的模型。不读取时也可以手动填写模型 ID。</p>
+    <label class="field-label">模型 ID（可手动修改）<input id="aiModel" maxlength="200" autocomplete="off" placeholder="例如 deepseek-chat；以平台读取结果为准"></label>
+    <details id="aiAdvanced" class="ai-advanced"><summary>高级设置：接口地址</summary>
+    <label class="field-label">接口地址（基础地址或完整请求地址）<input id="aiEndpoint" type="url" required autocomplete="off" placeholder="https://api.deepseek.com/chat/completions"></label>
+    </details>
     <label class="ai-checkbox"><input id="aiRememberKey" type="checkbox">仅在当前标签页暂存密钥，刷新后可继续使用</label>
     <label class="ai-checkbox"><input id="aiShareContext" type="checkbox">允许在点击 AI 分析或附带统计聊天时，将任务与专注统计发送到此接口</label>
     <p class="field-help">接口地址与模型保存在本机；密钥默认仅保留在页面内存，暂存时使用当前标签页的会话存储，不进入任务备份或网站源码。每位访客填写自己的接口，调用费用由接口服务商计算。</p>
     <p class="field-help">支持 OpenAI 兼容的 Chat Completions 接口。浏览器直连需要服务商允许跨域访问；不支持时可填写你自己的代理地址。</p>
-    <p id="aiConfigStatus" class="ai-request-status" role="status"></p><button class="text-button" type="button" id="aiConfigCancelRequest" hidden>取消请求</button><div class="dialog-actions ai-config-actions"><button class="text-button" type="button" id="aiForgetKey">清除密钥</button><button class="secondary-button" type="button" id="aiTestConnection">测试连接</button><button class="primary-button" type="submit">保存接口配置</button></div>
+    <p id="aiConfigStatus" class="ai-request-status" role="status"></p><button class="text-button" type="button" id="aiConfigCancelRequest" hidden>取消请求</button><div class="dialog-actions ai-config-actions"><button class="text-button" type="button" id="aiForgetKey">清除密钥</button><button class="secondary-button" type="button" id="aiTestConnection">保存并测试</button><button class="primary-button" type="submit">保存配置</button></div>
   </form></dialog>
 
   <dialog id="confirmDialog" class="app-dialog confirm-dialog"><div class="confirm-symbol" data-icon="info"></div><h2 id="confirmTitle">确认操作</h2><p id="confirmMessage"></p><div class="dialog-actions"><button class="secondary-button" id="confirmCancel">取消</button><button class="primary-button" id="confirmAccept">确认</button></div></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js?v=1.1.1"></script>
 </body>
 </html>

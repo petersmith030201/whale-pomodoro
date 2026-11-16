@@ -1,22 +1,22 @@
-import {AI_DEFAULTS,endpointURL,planReport,localAdvice,apiContext,applyAdvice,analyzeAI,requestAI,CHAT_PROMPT} from './ai.js';
+import {AI_DEFAULTS,DEEPSEEK_MODELS,isDeepSeek,normalizeKey,listModels,chooseModel,endpointURL,planReport,localAdvice,apiContext,applyAdvice,analyzeAI,requestAI,CHAT_PROMPT} from './ai.js?v=1.1.1';
 
 export function setupAI({getState,change,toast,speak}) {
   const $=id=>document.getElementById(id), CONFIG='whale-focus:ai-config:v1', KEY='whale-focus:ai-session:v1';
   let config={...AI_DEFAULTS},key='',remember=false,busy=false,controller=null,lastReport=null,lastAdvice=null;
-  const messages=[],history=[];
+  const messages=[],history=[];let availableModels=[],modelsEndpoint="";
   try {
     const saved=JSON.parse(localStorage.getItem(CONFIG)||'null');
-    if(saved)config={endpoint:endpointURL(saved.endpoint||AI_DEFAULTS.endpoint),model:typeof saved.model==='string'?saved.model.slice(0,120):'',shareContext:saved.shareContext===true};
+    if(saved)config={endpoint:endpointURL(saved.endpoint||AI_DEFAULTS.endpoint),model:typeof saved.model==='string'?saved.model.slice(0,200):'',shareContext:saved.shareContext===true};
     const secret=JSON.parse(sessionStorage.getItem(KEY)||'null');
     if(secret?.endpoint===config.endpoint&&secret?.model===config.model&&typeof secret.key==='string'&&secret.key.length<=2000){key=secret.key;remember=true;}
   } catch {config={...AI_DEFAULTS};}
   const ready=()=>Boolean(config.model.trim()&&(key.trim()||new URL(config.endpoint).hostname!=='api.deepseek.com'));
   function status(text,error=false,target='aiRequestStatus') {$(target).textContent=text;$(target).classList.toggle('error',error);}
   function modeNote() {
-    $('aiModeNote').textContent=ready()?`已配置模型 ${config.model}。分析发送到 ${new URL(config.endpoint).origin}；聊天仅在你点击发送时请求接口。${config.shareContext?'已允许发送任务统计。':'尚未允许发送任务统计，计划分析仍使用本地统计。'}`:'尚未配置 AI 接口：计划分析使用本地统计。聊天需要先在“接口设置”中填写地址、模型和密钥。';
+    $('aiModeNote').textContent=ready()?`已配置模型 ${config.model}。分析发送到 ${new URL(config.endpoint).origin}；聊天仅在你点击发送时请求接口。${config.shareContext?'已允许发送任务统计。':'尚未允许发送任务统计，计划分析仍使用本地统计。'}`:config.model&&isDeepSeek(config.endpoint)?'DeepSeek 地址和模型已准备好，但本页没有密钥。请在接口设置中粘贴密钥；未暂存密钥时，刷新后需要重新填写。计划仍可使用本地统计。':'尚未配置 AI 接口：计划分析使用本地统计。请在接口设置中填写地址、密钥，并读取可用模型。';
   }
   function setBusy(value,label='') {
-    busy=value;for(const id of ['aiRunAnalysis','aiSendChat','aiTestConnection','aiApply'])$(id).disabled=value;
+    busy=value;for(const id of ['aiRunAnalysis','aiSendChat','aiTestConnection','aiFetchModels','aiApply','aiPreset','aiEndpoint','aiKey','aiModelSelect','aiModel'])$(id).disabled=value;
     $('aiCancelRequest').hidden=!value;$('aiConfigCancelRequest').hidden=!value;$('aiScope').disabled=value;
     if(label)status(label);
   }
@@ -39,13 +39,36 @@ export function setupAI({getState,change,toast,speak}) {
   }
   function readForm() {
     const endpoint=endpointURL($('aiEndpoint').value),model=$('aiModel').value.trim();
-    if(model.length>120)throw new Error('模型名称过长。');
-    return {config:{endpoint,model,shareContext:$('aiShareContext').checked},key:$('aiKey').value.trim(),remember:$('aiRememberKey').checked};
+    if(model.length>200)throw new Error('模型名称过长。');
+    return {config:{endpoint,model,shareContext:$('aiShareContext').checked},key:normalizeKey($('aiKey').value),remember:$('aiRememberKey').checked};
+  }
+  function renderModelChoices(models,selected) {
+    const select=$('aiModelSelect');select.replaceChildren(new Option('请选择模型',''));
+    for(const m of models)select.add(new Option(m.name&&m.name!==m.id?`${m.name} · ${m.id}`:m.id,m.id));
+    if(selected&&!models.some(m=>m.id===selected))select.add(new Option(`手动填写：${selected}`,selected));
+    select.add(new Option('手动填写其他模型 ID','__custom__'));select.value=selected||'';
+  }
+  function resetModelChoices() {
+    let endpoint;try{endpoint=endpointURL($('aiEndpoint').value);}catch{endpoint='';}
+    const models=endpoint===modelsEndpoint?availableModels:endpoint&&isDeepSeek(endpoint)?DEEPSEEK_MODELS:[];
+    renderModelChoices(models,$('aiModel').value.trim());
+    $('aiModelHint').textContent=endpoint===modelsEndpoint&&availableModels.length?`已从此接口读取 ${availableModels.length} 个模型。选择下拉项，也可以修改模型 ID。`:'先填密钥，再点击“读取可用模型”；候选项以平台实际返回的列表为准。';
+  }
+  function saveConfig(next) {
+    if(next.key&&!next.config.model)throw new Error('请选择一个模型，或点击“读取可用模型”。');
+    config=next.config;key=next.key;remember=next.remember;let saved=true;
+    try{localStorage.setItem(CONFIG,JSON.stringify(config));if(remember&&key)sessionStorage.setItem(KEY,JSON.stringify({endpoint:config.endpoint,model:config.model,key}));else sessionStorage.removeItem(KEY);}catch{saved=false;}
+    modeNote();return saved;
+  }
+  async function fetchModelsFor(next,signal) {
+    const models=await listModels(next.config,next.key,{signal});availableModels=models;modelsEndpoint=next.config.endpoint;
+    const selected=chooseModel(models,next.config.model);next.config.model=selected;$('aiModel').value=selected;renderModelChoices(models,selected);
+    $('aiModelHint').textContent=`已从平台读取 ${models.length} 个可用模型，当前选择 ${selected}。`;return models;
   }
   function openConfig() {
-    $('aiEndpoint').value=config.endpoint;$('aiModel').value=config.model;$('aiKey').value=key;
-    $('aiRememberKey').checked=remember;$('aiShareContext').checked=config.shareContext;$('aiPreset').value='custom';
-    status('',false,'aiConfigStatus');if(!$('aiConfigDialog').open)$('aiConfigDialog').showModal();
+    $('aiEndpoint').value=config.endpoint;$('aiModel').value=config.model|| (isDeepSeek(config.endpoint)?AI_DEFAULTS.model:'');$('aiKey').value=key;
+    $('aiRememberKey').checked=remember;$('aiShareContext').checked=config.shareContext;$('aiPreset').value=isDeepSeek(config.endpoint)?'deepseek':'custom';
+    resetModelChoices();$('aiAdvanced').open=!isDeepSeek(config.endpoint);if(!$('aiConfigDialog').open){$('aiConfigDialog').showModal();$('aiConfigDialog').scrollTop=0;}
   }
   function showAdvice(advice,report) {
     lastReport=report;lastAdvice=advice;
@@ -103,24 +126,37 @@ export function setupAI({getState,change,toast,speak}) {
     const selected=[...$('aiAnalysisResult').querySelectorAll('input[data-advice-index]:checked')].map(e=>Number(e.dataset.adviceIndex));
     if(change(()=>applyAdvice(getState(),lastAdvice,lastReport,selected))){lastAdvice=null;$('aiApply').hidden=true;$('aiAnalysisResult').querySelectorAll('input').forEach(e=>e.disabled=true);status('所选建议已应用并在本机保存。任务完成状态和当前计时没有改变。');toast('计划已更新，可以按新的小步骤继续。');}
   };
-  $('aiPreset').onchange=()=>{if($('aiPreset').value==='deepseek'){$('aiEndpoint').value=AI_DEFAULTS.endpoint;$('aiModel').value='deepseek-flash';$('aiKey').value='';}};
+  $('aiModelSelect').onchange=()=>{const value=$('aiModelSelect').value;if(value==='__custom__'){$('aiModel').focus();return;}$('aiModel').value=value;};
+  $('aiModel').oninput=resetModelChoices;$('aiEndpoint').onchange=resetModelChoices;
+  $('aiPreset').onchange=()=>{if($('aiPreset').value==='deepseek'){$('aiEndpoint').value=AI_DEFAULTS.endpoint;if(!$('aiModel').value.trim())$('aiModel').value=AI_DEFAULTS.model;}$('aiAdvanced').open=$('aiPreset').value==='custom';resetModelChoices();};
   $('aiConfigForm').onsubmit=event=>{
     event.preventDefault();if(busy){status('请先等待或取消当前请求。',true,'aiConfigStatus');return;}
-    try {
-      const next=readForm();config=next.config;key=next.key;remember=next.remember;
-      let saved=true;
-      try{localStorage.setItem(CONFIG,JSON.stringify(config));if(remember&&key)sessionStorage.setItem(KEY,JSON.stringify({endpoint:config.endpoint,model:config.model,key}));else sessionStorage.removeItem(KEY);}catch{saved=false;}
-      modeNote();$('aiConfigDialog').close();toast(saved?'接口配置已保存。密钥不会进入任务备份。':'配置在本页生效；浏览器无法保存，请勿关闭当前页面。');
-    } catch(error){status(error.message,true,'aiConfigStatus');}
+    try {const saved=saveConfig(readForm());$('aiConfigDialog').close();toast(saved?(remember?'接口配置已保存，密钥已在当前标签页暂存。':'接口配置已保存；密钥仅在本页有效，刷新后需重填。'):'配置在本页生效；浏览器无法保存，请勿关闭当前页面。');}
+    catch(error){status(error.message,true,'aiConfigStatus');}
+  };
+  $('aiFetchModels').onclick=async()=>{
+    if(busy)return;let next;try{next=readForm();}catch(error){status(error.message,true,'aiConfigStatus');return;}
+    controller=new AbortController();setBusy(true);status('正在读取平台可用模型，不发送任务，也不生成聊天回复。',false,'aiConfigStatus');
+    try{const models=await fetchModelsFor(next,controller.signal);status(`读取成功：${models.length} 个模型。请选择模型后点击“保存并测试”。`,false,'aiConfigStatus');}
+    catch(error){status('读取模型失败：'+error.message,true,'aiConfigStatus');}
+    finally{controller=null;setBusy(false);}
   };
   $('aiForgetKey').onclick=()=>{controller?.abort();key='';remember=false;$('aiKey').value='';$('aiRememberKey').checked=false;try{sessionStorage.removeItem(KEY);}catch{}modeNote();status('已清除本页及当前标签页暂存的密钥。',false,'aiConfigStatus');};
   $('aiCancelRequest').onclick=()=>controller?.abort();$('aiConfigCancelRequest').onclick=()=>controller?.abort();
   $('aiTestConnection').onclick=async()=>{
     if(busy)return;
     let next;try{next=readForm();}catch(error){status(error.message,true,'aiConfigStatus');return;}
-    controller=new AbortController();setBusy(true);status('正在测试连接，仅发送一句测试文字，不发送任务。',false,'aiConfigStatus');
-    try{await requestAI(next.config,next.key,[{role:'user',content:'请只回复：小鲸已就绪。'}],{signal:controller.signal});status('连接成功，可以保存配置并开始分析或聊天。',false,'aiConfigStatus');}
-    catch(error){status(error.message,true,'aiConfigStatus');}
+    controller=new AbortController();setBusy(true);status('正在检查接口和模型……',false,'aiConfigStatus');
+    try{
+      if(isDeepSeek(next.config.endpoint)){
+        status('第 1 步：使用此密钥读取 DeepSeek 可用模型。',false,'aiConfigStatus');
+        await fetchModelsFor(next,controller.signal);
+      }
+      status(`第 2 步：测试模型 ${next.config.model||'（未选择）'}。仅发送一句测试文字，不发送任务。`,false,'aiConfigStatus');
+      await requestAI(next.config,next.key,[{role:'user',content:'请只回复：OK'}],{signal:controller.signal,maxTokens:next.config.model.includes('reasoner')?4096:128});
+      const saved=saveConfig(next);status(`连接成功：${next.config.model} 已实际返回回复。${saved?'配置已保存，关闭此窗口即可开始聊天或分析。':'配置仅在本页生效，请保持页面打开。'}`,false,'aiConfigStatus');
+    }
+    catch(error){status('连接失败：'+error.message,true,'aiConfigStatus');}
     finally{controller=null;setBusy(false);}
   };
   window.addEventListener('whale-data-cleared',()=>{controller?.abort();config={...AI_DEFAULTS};key='';remember=false;lastAdvice=null;lastReport=null;messages.length=0;history.length=0;try{localStorage.removeItem(CONFIG);sessionStorage.removeItem(KEY);}catch{}$('aiKey').value='';$('aiAnalysisResult').replaceChildren();$('aiApply').hidden=true;chatRender();modeNote();});

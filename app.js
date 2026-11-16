@@ -1,4 +1,4 @@
-import {setupAI} from './ai-ui.js';
+import {setupAI} from './ai-ui.js?v=1.1.1';
 import {createState,addTask,updateTask,deleteTask,toggleTask,moveTask,descendants,aggregates,exportBackup,parseBackup,mergeBackup,loadState} from './model.js';
 import {durationFor,remaining,startTimer,pauseTimer,resetTimer,switchMode,tickTimer,restoreTimer,dailyStats} from './timer.js';
 
