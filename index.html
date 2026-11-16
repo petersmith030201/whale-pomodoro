@@ -7,8 +7,8 @@
   <meta name="description" content="和大肥鱼一起，把大任务拆成小小一步。支持多级任务、本地保存和备份的鲸鱼娘番茄钟。">
   <title>肥鱼专注屋 · 和小鲸一起专注</title>
   <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
-  <link rel="stylesheet" href="./styles.css?v=1.2.0">
-  <link rel="stylesheet" href="./design.css?v=1.2.0">
+  <link rel="stylesheet" href="./styles.css?v=1.2.1">
+  <link rel="stylesheet" href="./design.css?v=1.2.1">
 </head>
 <body id="top">
   <svg class="site-symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -37,6 +37,7 @@
         <div class="clock-wrap"><svg class="clock-whale-body" viewBox="0 0 400 330" aria-hidden="true"><path d="M35 166C32 92 86 43 155 43c72 0 128 47 134 116 20 0 35-11 40-32 21 2 31 19 21 34 17 0 29 13 28 30-23 14-52 4-78-11-9 65-66 109-143 108C81 286 35 242 35 166Z"/><path d="M144 40c-13-21-8-32 2-34m12 31c4-16 16-23 26-17" class="whale-spout"/><path d="M63 202q13 11 28 1" class="whale-smile"/></svg><div class="timer-character-sticker" aria-hidden="true"><img src="./assets/whale-idle.png" alt=""></div><svg class="clock-ring" viewBox="0 0 300 300" aria-hidden="true"><circle class="ring-track" cx="150" cy="150" r="137"/><circle class="ring-progress" id="ringProgress" cx="150" cy="150" r="137"/></svg><div class="clock-content"><span class="clock-caption" id="clockCaption">准备好，就开始吧</span><div class="clock-time" id="clockTime" role="timer" aria-label="剩余25分钟">25:00</div><span class="mode-duration" id="modeDuration">25 分钟，只做一件事</span></div></div>
         <div class="current-task"><span class="task-dot"></span><span class="current-label">本轮专注</span><strong id="boundTaskLabel">自由专注</strong><button id="locateTask" class="icon-button small" aria-label="查看当前任务" title="查看当前任务" data-icon="arrow-up-right" hidden></button></div>
         <div class="timer-controls"><button class="round-button" id="resetTimer" aria-label="重置本轮" title="重置本轮" data-icon="rotate"></button><button class="primary-button start-button" id="startTimer"><span data-icon="play"></span><span id="startLabel">开始专注</span></button><button class="round-button" id="skipBreak" aria-label="跳过休息" title="跳过休息" data-icon="skip" disabled></button></div>
+        <div class="mini-timer-tools"><button class="mini-timer-toggle" id="miniTimerToggle" type="button" aria-pressed="false" title="桌面置顶，只显示倒计时；拖动窗口边缘可调整大小">桌面小窗 ↗</button><label><input id="miniTimerAuto" type="checkbox" checked>开始时打开</label></div><p id="miniTimerSupport" class="mini-timer-support" hidden>此浏览器不支持桌面小窗，可用桌面 Chrome / Edge 打开。</p>
         <div class="round-line"><div class="round-dots" id="roundDots" aria-label="本组进度"></div><span id="cycleLabel">第 1 / 4 轮</span><span class="keyboard-tip"><kbd>Space</kbd> 开始 / 暂停</span></div>
       </article>
 
@@ -104,6 +105,6 @@
 
   <dialog id="confirmDialog" class="app-dialog confirm-dialog"><div class="confirm-symbol" data-icon="info"></div><h2 id="confirmTitle">确认操作</h2><p id="confirmMessage"></p><div class="dialog-actions"><button class="secondary-button" id="confirmCancel">取消</button><button class="primary-button" id="confirmAccept">确认</button></div></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <script type="module" src="./app.js?v=1.2.0"></script>
+  <script type="module" src="./app.js?v=1.2.1"></script>
 </body>
 </html>

@@ -66,7 +66,7 @@ GitHub Free 可以为公开仓库提供 Pages。公开仓库中的代码和图�
 
 1. 登录自己的 GitHub 账号，新建公开仓库 `whale-pomodoro`。
 2. 将项目文件上传到仓库根目录。请确认根目录可以直接看到 `index.html`，而不是再套一层 `whale-pomodoro/` 文件夹。
-3. 确认 `styles.css`、`design.css`、`app.js`、`companion.js`、`model.js`、`timer.js`、`ai.js`、`ai-ui.js`、`.nojekyll` 和 `assets/` 都在仓库中。
+3. 确认 `styles.css`、`design.css`、`app.js`、`companion.js`、`mini-timer.js`、`model.js`、`timer.js`、`ai.js`、`ai-ui.js`、`.nojekyll` 和 `assets/` 都在仓库中。
 4. 打开仓库 **Settings → Pages → Build and deployment**。
 5. **Source** 选择 **Deploy from a branch**，分支选择 **main**，目录选择 **/(root)**，点击 **Save**。
 6. 等待部署完成，打开 Pages 设置显示的网址。以后更新 `main` 分支中的网站文件，会重新发布。
@@ -127,3 +127,13 @@ node --test
 设计参考与原创绘制范围见 [DESIGN_REFERENCES.md](./DESIGN_REFERENCES.md)。梁文锋便签中的文字为本站创作，不是真人引语，也不表示本人或官方背书。
 
 用户于 2026-11-16 提供照片 `fan-note-photo.jpg`，要求用于梁文锋与大肥鱼互动主题。照片原样保存，仅通过网页布局裁切展示；人物身份按用户提供的主题标注，未独立核验。拼贴配文为本站创作，非照片人物引语。点击卡片仅触发本地小鲸回应，不请求 AI、不更改计时或任务。
+
+## 桌面悬浮倒计时（v1.2.1）
+
+在支持 Document Picture-in-Picture 的桌面浏览器中（例如支持该功能的 Chrome / Edge），点击开始或继续计时，会按“开始时打开”选项自动打开置顶小窗。也可点击番茄钟下方的“桌面小窗”手动打开。小窗内容只有剩余时间，没有角色、任务和操作按钮；暂停和继续请在主页面操作。默认请求 200×90 像素，实际最小尺寸与浏览器自带的关闭栏由浏览器决定。拖动小窗标题区域可移动，拖动边缘或角可调整大小，数字会随窗口缩放。浏览器通常会记住上次的窗口位置与大小。
+
+小窗与主页面使用同一计时状态，关闭小窗不会暂停计时或增加记录。完成一轮时同步显示下一阶段；主页面刷新或关闭时，桌面小窗随之关闭，不会自行重新弹出。取消“开始时打开”后保留手动入口；此偏好保存在当前浏览器，独立于任务备份。不支持的浏览器会显示说明，计时仍可正常使用。打开失败或超时后可点击重试。
+
+该功能需要 HTTPS（本站 GitHub Pages 已使用）或本机 localhost，并由用户点击触发，不会在加载网页时自行弹出。
+
+参考：[Chrome 官方 Document Picture-in-Picture 说明](https://developer.chrome.com/docs/web-platform/document-picture-in-picture)、[MDN requestWindow](https://developer.mozilla.org/en-US/docs/Web/API/DocumentPictureInPicture/requestWindow)。
