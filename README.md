@@ -137,3 +137,11 @@ node --test
 该功能需要 HTTPS（本站 GitHub Pages 已使用）或本机 localhost，并由用户点击触发，不会在加载网页时自行弹出。
 
 参考：[Chrome 官方 Document Picture-in-Picture 说明](https://developer.chrome.com/docs/web-platform/document-picture-in-picture)、[MDN requestWindow](https://developer.mozilla.org/en-US/docs/Web/API/DocumentPictureInPicture/requestWindow)。
+
+## 到点边缘提醒（v1.2.2）
+
+学习时间结束：绿色边缘；短休息或长休息结束：红色边缘。提醒采用 1.6 秒一轮的渐亮渐暗，持续约 6.4 秒；开启减少动效时保持常亮。主网页与已打开的桌面倒计时小窗同步显示，不依赖 AI 气泡、声音设置或通知授权。设置中可预览两种颜色，预览不会结算计时或增加记录。
+
+页面在后台时保留未读提醒，返回后显示；刷新发现一轮已到期时也显示提醒。重复结算同一轮不会重复提醒或新增番茄。
+
+覆盖范围是网页可见区域，以及已打开的小窗内部边缘，无法控制其他软件之外的整个桌面边缘。后台、锁屏和系统休眠仍受浏览器运行限制，无法保证锁屏期间准时响铃或闪光。参见 [MDN 页面可见性与后台节流说明](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API)。

@@ -1,4 +1,5 @@
-import {createMiniTimer} from './mini-timer.js?v=1.2.1';
+import {createCompletionAlerts} from './completion-alert.js?v=1.2.2';
+import {createMiniTimer} from './mini-timer.js?v=1.2.2';
 import {initCompanion} from './companion.js?v=1.2.0';
 import {setupAI} from './ai-ui.js?v=1.2.0';
 import {createState,addTask,updateTask,deleteTask,toggleTask,moveTask,descendants,aggregates,exportBackup,parseBackup,mergeBackup,loadState} from './model.js';
@@ -24,14 +25,16 @@ let miniTimer=null,miniAuto=true;
 try{miniAuto=localStorage.getItem('whale-focus:mini-auto')!=='false';}catch{}
 let state=createState(),storageOK=true,conflicted=false,scopeId=null,filter='all',editingId=null,pendingImport=null,loadingError=null,readFailed=false,lastCharacter='',lastPersist=0;
 try{const saved=localStorage.getItem(STORE);if(saved)state=loadState(saved);}catch(error){storageOK=false;readFailed=true;loadingError=error;}
-restoreTimer(state);
+const restoredCompletion=restoreTimer(state);
+const completionAlerts=createCompletionAlerts({getReducedMotion:()=>state.settings.reducedMotion});
+completionAlerts.attach(document,{main:true});
 function claim(){try{localStorage.setItem(OWNER,tabId);}catch{storageOK=false;}}
 function save(){if(conflicted||readFailed){$('storageWarning').hidden=false;$('saveStatus').querySelector('span').textContent='请导出备份';$('recoverStorage').hidden=true;return;}state.updatedAt=Date.now();try{localStorage.setItem(STORE,JSON.stringify(state));storageOK=true;lastPersist=Date.now();}catch{storageOK=false;}$('storageWarning').hidden=storageOK;$('recoverStorage').hidden=storageOK;$('saveStatus').querySelector('span').textContent=storageOK?'数据已保存在本机':'请导出备份';}
 function change(action){if(conflicted){toast('请刷新页面后继续，以免覆盖另一个标签页的进度。');return false;}const previous=structuredClone(state);try{action();save();renderAll();return true;}catch(error){state=previous;renderAll();toast(error.message||'操作未完成，请重试。');return false;}}
 window.addEventListener('storage',event=>{if(event.key===OWNER&&event.newValue!==tabId){conflicted=true;$('multiTabWarning').hidden=false;if(state.timer.status==='running')pauseTimer(state);renderTimer();}else if(event.key===STORE&&!conflicted){try{if(localStorage.getItem(OWNER)!==tabId){conflicted=true;$('multiTabWarning').hidden=false;renderTimer();}}catch{}}});
 claim();save();
 
-function notifyCompletion(event){if(!event)return;const focus=event.completedMode==='focus';say(focus?'认真完成一轮啦！<br>现在，给自己一点休息时间。':'休息得怎么样？<br>准备好，我们再前进一步。');if(focus)celebrate();if(state.settings.sound)chime();if(state.settings.notify&&'Notification'in window&&Notification.permission==='granted'){try{new Notification(focus?'收获一个番茄！':'休息结束啦',{body:focus?'小鲸提醒你：放松眼睛，伸个懒腰吧。':'准备好后，开始下一件小事。',icon:'./assets/favicon.svg',tag:'whale-focus'});}catch{}}renderTree();renderHistory();}
+function notifyCompletion(event){if(!completionAlerts.notify(event))return;const focus=event.completedMode==='focus';toast(focus?'学习时间结束，休息一下。':'休息时间结束，准备开始学习。');say(focus?'认真完成一轮啦！<br>现在，给自己一点休息时间。':'休息得怎么样？<br>准备好，我们再前进一步。');if(focus)celebrate();if(state.settings.sound)chime();if(state.settings.notify&&'Notification'in window&&Notification.permission==='granted'){try{new Notification(focus?'收获一个番茄！':'休息结束啦',{body:focus?'小鲸提醒你：放松眼睛，伸个懒腰吧。':'准备好后，开始下一件小事。',icon:'./assets/favicon.svg',tag:'whale-focus'});}catch{}}renderTree();renderHistory();}
 let audioContext;
 function unlockAudio(){try{audioContext??=new(window.AudioContext||window.webkitAudioContext)();if(audioContext.state==='suspended')audioContext.resume();}catch{}}
 function chime(volume=state.settings.volume){unlockAudio();if(!audioContext)return;[659.25,783.99,987.77].forEach((frequency,i)=>{const oscillator=audioContext.createOscillator(),gain=audioContext.createGain(),at=audioContext.currentTime+i*.17;oscillator.type='sine';oscillator.frequency.value=frequency;gain.gain.setValueAtTime(0,at);gain.gain.linearRampToValueAtTime(Math.max(0,Math.min(1,volume))*.16,at+.02);gain.gain.exponentialRampToValueAtTime(.0001,at+.7);oscillator.connect(gain);gain.connect(audioContext.destination);oscillator.start(at);oscillator.stop(at+.75);});}
@@ -61,7 +64,7 @@ function confirmAction(title,message,accept='确认'){return new Promise(resolve
 function openTask(id=null,parentId=null){editingId=id;const task=state.tasks.find(t=>t.id===id);$('taskDialogTitle').textContent=task?'编辑这件小事':'添加一件小事';$('taskTitleInput').value=task?.title||'';$('taskEstimateInput').value=task?.estimate||'';const forbidden=id?descendants(state,id):new Set();const options=state.tasks.filter(t=>!forbidden.has(t.id));$('taskParentInput').replaceChildren(new Option('顶层任务',''));for(const t of options){const option=new Option(t.title.length>60?t.title.slice(0,60)+'…':t.title,t.id);$('taskParentInput').add(option);}$('taskParentInput').value=task?.parentId||parentId||'';$('taskAggregate').hidden=!task;if(task){const total=aggregates(state,id);$('taskAggregate').textContent=`包含本任务及全部子任务：${total.done} / ${total.total} 项已完成 · ${total.pomodoros} 个完成番茄 · ${total.focusMs<60000?Math.round(total.focusMs/1000)+' 秒':(total.focusMs/60000).toFixed(1)+' 分钟'}已投入 · 预计 ${total.estimate} 个番茄。正在计时的片段会在暂停后汇入。`;}$('taskExtraActions').hidden=!task;if(!$('taskDialog').open)openDialog('taskDialog');setTimeout(()=>$('taskTitleInput').focus(),0);}
 function shiftTask(direction){const task=state.tasks.find(t=>t.id===editingId);if(!task)return;const siblings=state.tasks.filter(t=>t.parentId===task.parentId).sort((a,b)=>a.order-b.order||a.createdAt-b.createdAt);const index=siblings.findIndex(t=>t.id===task.id),other=index+direction;if(other<0||other>=siblings.length){toast(direction<0?'已经是这一层的第一项了。':'已经是这一层的最后一项了。');return;}[siblings[index],siblings[other]]=[siblings[other],siblings[index]];change(()=>siblings.forEach((t,i)=>{t.order=i;t.updatedAt=Date.now();}));toast('任务顺序已调整');}
 
-function newMiniTimer(){return createMiniTimer({getSnapshot:()=>({remainingMs:remaining(state),status:state.timer.status}),onTick:pulseTimer,onError:toast,onStatus:open=>{
+function newMiniTimer(){return createMiniTimer({getSnapshot:()=>({remainingMs:remaining(state),status:state.timer.status}),onTick:pulseTimer,onError:toast,onDocument:doc=>completionAlerts.attach(doc),onStatus:open=>{
   $('miniTimerToggle').textContent=open?'关闭小窗':'桌面小窗 ↗';$('miniTimerToggle').setAttribute('aria-pressed',String(open));
 }});}
 miniTimer=newMiniTimer();
@@ -113,3 +116,8 @@ if(loadingError)toast('本地数据暂时无法读取，原数据仍保留且不
 initCompanion(()=>state.settings);
 window.addEventListener('whale-data-cleared',()=>{speechPinned=false;speechUntil=0;renderCharacter();});
 setupAI({getState:()=>state,change,toast,speak:(text,options={})=>{say(esc(text).replace(/\n/g,'<br>'),{sticky:options.sticky!==false,source:options.source||'AI 对话',force:true});window.dispatchEvent(new CustomEvent('whale-gesture',{detail:{kind:'reply'}}));}});
+
+if(restoredCompletion)notifyCompletion(restoredCompletion);
+
+$('testFocusAlert').onclick=()=>completionAlerts.notify({completedMode:'focus'});
+$('testRestAlert').onclick=()=>completionAlerts.notify({completedMode:'short'});

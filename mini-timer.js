@@ -14,7 +14,7 @@ const MINI_STYLE=`
   body[data-status=paused] #miniCountdown{color:#73839d}
 `;
 
-export function createMiniTimer({host=window,getSnapshot,onTick=()=>{},onStatus=()=>{},onError=()=>{},openTimeoutMs=8000}) {
+export function createMiniTimer({host=window,getSnapshot,onTick=()=>{},onStatus=()=>{},onError=()=>{},onDocument=()=>()=>{},openTimeoutMs=8000}) {
   let view=null,pending=null,disposed=false;
   const supported=()=>Boolean(host.isSecureContext&&host.documentPictureInPicture?.requestWindow);
   const isOpen=()=>Boolean(view&&!view.window.closed);
@@ -27,6 +27,7 @@ export function createMiniTimer({host=window,getSnapshot,onTick=()=>{},onStatus=
   }
   function release(current){
     if(current.interval!=null)current.window.clearInterval(current.interval);
+    current.detach?.();current.detach=null;
     if(view===current){view=null;onStatus(false);}
   }
   function close(){
@@ -55,7 +56,8 @@ export function createMiniTimer({host=window,getSnapshot,onTick=()=>{},onStatus=
       const style=doc.createElement('style');style.textContent=MINI_STYLE;doc.head.append(style);
       const time=doc.createElement('div');time.id='miniCountdown';time.setAttribute('role','timer');
       doc.body.replaceChildren(time);
-      const current={window:win,time,interval:null};view=current;
+      const current={window:win,time,interval:null,detach:null};view=current;
+      current.detach=onDocument(doc);
       win.addEventListener('pagehide',()=>release(current),{once:true});
       current.interval=win.setInterval(()=>{if(view!==current||win.closed)return;onTick();update();},250);
       update();onStatus(true);return true;
